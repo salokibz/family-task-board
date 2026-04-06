@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Family Task Board — Salim & Sofia</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #F9FAFB; color: #111827; min-height: 100vh; }
+
+  .header { background: #fff; border-bottom: 1px solid #E5E7EB; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px; }
+  .header-row { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  .logo { width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #6366F1, #EC4899); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .header h1 { font-size: 20px; font-weight: 700; }
+  .header p { font-size: 14px; color: #6B7280; }
+
+  .progress-wrap { margin-top: 16px; }
+  .progress-labels { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px; }
+  .progress-labels span:first-child { color: #4B5563; font-weight: 500; }
+  .progress-labels span:last-child { color: #6366F1; font-weight: 700; }
+  .progress-bar { height: 10px; border-radius: 5px; background: #E5E7EB; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 5px; background: linear-gradient(90deg, #6366F1, #EC4899); transition: width 0.5s; }
+
+  .filters { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-btn { font-size: 12px; font-weight: 500; padding: 6px 12px; border-radius: 99px; border: 1px solid #E5E7EB; background: transparent; color: #6B7280; cursor: pointer; transition: all 0.15s; }
+  .filter-btn.active { background: #6366F1; color: #fff; border-color: #6366F1; }
+
+  .section-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .section-title span { font-size: 11px; font-weight: 600; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.5px; }
+  .section-title .count { font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+  .card { background: #fff; border-radius: 12px; border: 1px solid #E5E7EB; overflow: hidden; }
+  .task-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; cursor: pointer; transition: background 0.15s; border-top: 1px solid #F3F4F6; }
+  .task-row:first-child { border-top: none; }
+  .task-row:hover { background: #F9FAFB; }
+
+  .checkbox { margin-top: 2px; width: 20px; height: 20px; border-radius: 50%; border: 2px solid #D1D5DB; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .checkbox.done { background: #16A34A; border-color: #16A34A; }
+
+  .task-text { flex: 1; font-size: 14px; line-height: 1.4; min-width: 0; }
+  .task-text.done { color: #9CA3AF; text-decoration: line-through; }
+
+  .badge { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 99px; display: inline-block; }
+  .badge-high { background: #FDECEA; color: #991B1B; }
+  .badge-med { background: #FEF3C7; color: #92400E; }
+  .badge-low { background: #D1FAE5; color: #065F46; }
+  .badge-done { background: #D1FAE5; color: #065F46; }
+
+  .badge-salim { background: #EEF2FF; color: #4338CA; }
+  .badge-sofia { background: #FDF2F8; color: #9D174D; }
+  .user-dot-salim { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #6366F1; margin-right: 4px; vertical-align: middle; }
+  .user-dot-sofia { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #EC4899; margin-right: 4px; vertical-align: middle; }
+
+  .task-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .btn-icon { background: none; border: none; cursor: pointer; color: #D1D5DB; padding: 2px; transition: color 0.15s; }
+  .btn-icon:hover { color: #EF4444; }
+
+  .completed-by-picker { padding: 0 16px 12px 48px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .completed-by-picker span { font-size: 12px; color: #9CA3AF; }
+  .pick-btn { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 99px; font-size: 13px; font-weight: 600; cursor: pointer; transition: transform 0.1s; border: 1.5px solid; }
+  .pick-btn:hover { transform: scale(1.05); }
+  .pick-salim { background: #EEF2FF; color: #4338CA; border-color: #6366F1; }
+  .pick-sofia { background: #FDF2F8; color: #9D174D; border-color: #EC4899; }
+  .pick-cancel { background: none; border: none; font-size: 12px; color: #9CA3AF; cursor: pointer; padding: 4px 8px; }
+
+  .meta { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; font-size: 11px; color: #D1D5DB; }
+  .meta .label { color: #9CA3AF; }
+
+  .add-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; font-weight: 500; padding: 12px 0; border-radius: 12px; border: 2px dashed #D1D5DB; color: #6B7280; background: transparent; cursor: pointer; margin-bottom: 24px; transition: all 0.15s; }
+  .add-btn:hover { border-color: #818CF8; color: #6366F1; }
+
+  .add-form { background: #fff; border-radius: 12px; border: 1px solid #E5E7EB; padding: 16px; margin-bottom: 24px; }
+  .add-form input[type="text"], .add-form select { width: 100%; font-size: 14px; border: 1px solid #E5E7EB; border-radius: 8px; padding: 10px 12px; outline: none; font-family: inherit; }
+  .add-form input[type="text"]:focus, .add-form select:focus { border-color: #818CF8; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+  .form-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .form-row select { width: auto; flex: 1; }
+  .form-row select:last-child { flex: 0 0 auto; min-width: 100px; }
+  .btn-primary { flex: 1; font-size: 14px; font-weight: 500; color: #fff; border-radius: 8px; padding: 10px 0; border: none; cursor: pointer; background: #6366F1; transition: opacity 0.15s; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-secondary { padding: 10px 16px; font-size: 14px; color: #6B7280; border-radius: 8px; border: 1px solid #E5E7EB; background: #fff; cursor: pointer; }
+  .btn-secondary:hover { background: #F9FAFB; }
+
+  .group-block { margin-bottom: 24px; }
+  .empty-state { text-align: center; padding: 40px 0; margin-bottom: 24px; }
+  .empty-state .emoji { font-size: 40px; margin-bottom: 8px; }
+  .empty-state p { color: #4B5563; font-weight: 500; }
+  .empty-state .sub { color: #9CA3AF; font-size: 14px; font-weight: 400; margin-top: 4px; }
+
+  .completed-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .completed-empty { background: #fff; border-radius: 12px; border: 1px solid #E5E7EB; padding: 24px 16px; text-align: center; color: #9CA3AF; font-size: 14px; }
+
+  .footer { display: flex; justify-content: space-between; font-size: 11px; color: #9CA3AF; padding-top: 12px; border-top: 1px solid #F3F4F6; margin-bottom: 40px; }
+  .footer button { color: #9CA3AF; background: none; border: none; cursor: pointer; font-size: 11px; }
+  .footer button:hover { color: #EF4444; }
+
+  .btn-text { background: none; border: none; cursor: pointer; font-size: 12px; color: #9CA3AF; padding: 4px 8px; border-radius: 6px; }
+  .btn-text:hover { color: #D97706; background: #FFFBEB; }
+  .btn-clear { font-size: 11px; color: #9CA3AF; background: none; border: none; cursor: pointer; }
+  .btn-clear:hover { color: #EF4444; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="wrap">
+    <div class="header-row">
+      <div class="logo">
+        <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      </div>
+      <div>
+        <h1>Family Task Board</h1>
+        <p>Salim & Sofia — shared collaboration</p>
+      </div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-labels">
+        <span id="progress-text">0 of 0 complete</span>
+        <span id="progress-pct">0%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+    <div class="filters" id="filters"></div>
+  </div>
+</div>
+
+<div class="wrap" id="main">
+  <div id="pending-area"></div>
+  <div id="add-area"></div>
+  <div id="completed-area"></div>
+  <div class="footer">
+    <span id="save-status">Stored locally on this device</span>
+    <button onclick="resetAll()">Reset to defaults</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = "family-task-board-v1";
+const GROUPS_KEY = "family-task-groups-v1";
+
+const DEFAULT_GROUPS = ["Wasaya — Guest service manual", "Training PowerPoint", "Files needed", "General"];
+
+const DEFAULT_TASKS = [
+  { id:"t1", group:"Wasaya — Guest service manual", text:"Correct beginning of pages 1–12 on guest service manual (reference original annual)", done:false, priority:"high", completedAt:null, completedBy:null },
+  { id:"t2", group:"Wasaya — Guest service manual", text:"Change font of the manual to match Calm Air manual style", done:false, priority:"high", completedAt:null, completedBy:null },
+  { id:"t3", group:"Wasaya — Guest service manual", text:"Insert bulletins into boxes throughout the manual", done:false, priority:"medium", completedAt:null, completedBy:null },
+  { id:"t4", group:"Training PowerPoint", text:"Create detailed 5-day training session PowerPoint in Wasaya brand colors", done:false, priority:"high", completedAt:null, completedBy:null },
+  { id:"t5", group:"Training PowerPoint", text:"Add explanation slides with quiz/questions at the end of each day", done:false, priority:"medium", completedAt:null, completedBy:null },
+  { id:"t6", group:"Files needed", text:"Upload guest service manual (current version)", done:false, priority:"high", completedAt:null, completedBy:null },
+  { id:"t7", group:"Files needed", text:"Upload original annual for page 1–12 reference", done:false, priority:"high", completedAt:null, completedBy:null },
+  { id:"t8", group:"Files needed", text:"Upload Calm Air manual for font/style reference", done:false, priority:"medium", completedAt:null, completedBy:null },
+];
+
+let tasks = [];
+let groups = [];
+let filterGroup = "All";
+let confirmingId = null;
+let showAddForm = false;
+let showNewGroupInput = false;
+
+function load() {
+  try {
+    const t = localStorage.getItem(STORAGE_KEY);
+    tasks = t ? JSON.parse(t) : JSON.parse(JSON.stringify(DEFAULT_TASKS));
+    const g = localStorage.getItem(GROUPS_KEY);
+    groups = g ? JSON.parse(g) : [...DEFAULT_GROUPS];
+  } catch {
+    tasks = JSON.parse(JSON.stringify(DEFAULT_TASKS));
+    groups = [...DEFAULT_GROUPS];
+  }
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  localStorage.setItem(GROUPS_KEY, JSON.stringify(groups));
+  document.getElementById("save-status").textContent = "Saved " + new Date().toLocaleTimeString();
+}
+
+function formatDate(d) {
+  if (!d) return "";
+  return new Date(d).toLocaleDateString("en-CA", { month:"short", day:"numeric", hour:"2-digit", minute:"2-digit" });
+}
+
+function userBadge(name) {
+  if (!name) return "";
+  const cls = name === "Salim" ? "badge-salim" : "badge-sofia";
+  const dot = name === "Salim" ? "user-dot-salim" : "user-dot-sofia";
+  return `<span class="badge ${cls}"><span class="${dot}"></span>${name}</span>`;
+}
+
+function priorityBadge(p) {
+  const map = { high: ["badge-high","High"], medium: ["badge-med","Med"], low: ["badge-low","Low"] };
+  const [cls, lbl] = map[p] || map.medium;
+  return `<span class="badge ${cls}">${lbl}</span>`;
+}
+
+function render() {
+  const pending = tasks.filter(t => !t.done && (filterGroup === "All" || t.group === filterGroup));
+  const completed = tasks.filter(t => t.done && (filterGroup === "All" || t.group === filterGroup))
+    .sort((a,b) => new Date(b.completedAt||0) - new Date(a.completedAt||0));
+  const total = tasks.length;
+  const doneCount = tasks.filter(t => t.done).length;
+  const pct = total ? Math.round(doneCount / total * 100) : 0;
+
+  document.getElementById("progress-text").textContent = `${doneCount} of ${total} complete`;
+  document.getElementById("progress-pct").textContent = `${pct}%`;
+  document.getElementById("progress-fill").style.width = `${pct}%`;
+
+  // Filters
+  const filtersEl = document.getElementById("filters");
+  filtersEl.innerHTML = ["All", ...groups].map(g =>
+    `<button class="filter-btn ${filterGroup === g ? 'active' : ''}" onclick="setFilter('${g.replace(/'/g,"\\'")}')">${g}</button>`
+  ).join("");
+
+  // Pending by group
+  const byGroup = {};
+  pending.forEach(t => { if (!byGroup[t.group]) byGroup[t.group] = []; byGroup[t.group].push(t); });
+
+  let pendingHtml = "";
+  for (const [group, items] of Object.entries(byGroup)) {
+    pendingHtml += `<div class="group-block">
+      <div class="section-title"><span>${group}</span><span class="count">${items.length} pending</span></div>
+      <div class="card">`;
+    items.forEach(t => {
+      const isConfirming = confirmingId === t.id;
+      pendingHtml += `<div>
+        <div class="task-row" onclick="startComplete('${t.id}')">
+          <div class="checkbox"></div>
+          <div class="task-text">${esc(t.text)}</div>
+          <div class="task-actions">
+            ${priorityBadge(t.priority)}
+            <button class="btn-icon" onclick="event.stopPropagation();removeTask('${t.id}')" title="Remove">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+        ${isConfirming ? `<div class="completed-by-picker">
+          <span>Completed by:</span>
+          <button class="pick-btn pick-salim" onclick="event.stopPropagation();confirmComplete('${t.id}','Salim')"><span class="user-dot-salim"></span>Salim</button>
+          <button class="pick-btn pick-sofia" onclick="event.stopPropagation();confirmComplete('${t.id}','Sofia')"><span class="user-dot-sofia"></span>Sofia</button>
+          <button class="pick-cancel" onclick="event.stopPropagation();cancelConfirm()">Cancel</button>
+        </div>` : ""}
+      </div>`;
+    });
+    pendingHtml += `</div></div>`;
+  }
+
+  if (pending.length === 0 && !showAddForm) {
+    pendingHtml = `<div class="empty-state"><div class="emoji">🎉</div><p>${filterGroup === "All" ? "All tasks complete!" : "No pending tasks here"}</p></div>`;
+  }
+  document.getElementById("pending-area").innerHTML = pendingHtml;
+
+  // Add form
+  let addHtml = "";
+  if (showAddForm) {
+    addHtml = `<div class="add-form">
+      <input type="text" id="new-task-input" placeholder="What needs to be done?" onkeydown="if(event.key==='Enter')addTask()" autofocus style="margin-bottom:12px">
+      <div class="form-row">
+        ${showNewGroupInput
+          ? `<input type="text" id="new-group-input" placeholder="New category name" autofocus>`
+          : `<select id="group-select" onchange="if(this.value==='__new__'){toggleNewGroup(true)}">
+              ${groups.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join("")}
+              <option value="__new__">+ New category...</option>
+            </select>`
+        }
+        <select id="priority-select">
+          <option value="high">High</option>
+          <option value="medium" selected>Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <button class="btn-primary" onclick="addTask()">Add task</button>
+        <button class="btn-secondary" onclick="hideAddForm()">Cancel</button>
+      </div>
+    </div>`;
+  } else {
+    addHtml = `<button class="add-btn" onclick="showAdd()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      Add a task
+    </button>`;
+  }
+  document.getElementById("add-area").innerHTML = addHtml;
+
+  // Completed
+  let compHtml = `<div class="completed-header">
+    <span style="font-size:11px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.5px">Completed</span>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span class="badge badge-done">${completed.length}</span>
+      ${completed.length > 0 ? `<button class="btn-clear" onclick="clearCompleted()">Clear all</button>` : ""}
+    </div>
+  </div>`;
+
+  if (completed.length === 0) {
+    compHtml += `<div class="completed-empty">No completed tasks yet. Tap a task above to mark it done.</div>`;
+  } else {
+    compHtml += `<div class="card">`;
+    completed.forEach(t => {
+      compHtml += `<div class="task-row" style="cursor:default">
+        <div class="checkbox done">
+          <svg width="12" height="12" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div class="task-text done">${esc(t.text)}</div>
+          <div class="meta">
+            <span>${esc(t.group)}</span>
+            <span>&middot;</span>
+            <span>${formatDate(t.completedAt)}</span>
+            <span>&middot;</span>
+            <span class="label">by</span>
+            ${userBadge(t.completedBy)}
+          </div>
+        </div>
+        <div class="task-actions">
+          <button class="btn-text" onclick="undoComplete('${t.id}')">Undo</button>
+          <button class="btn-icon" onclick="removeTask('${t.id}')" title="Remove">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>`;
+    });
+    compHtml += `</div>`;
+  }
+  document.getElementById("completed-area").innerHTML = compHtml;
+
+  // Focus input if add form is open
+  if (showAddForm) {
+    const inp = document.getElementById("new-task-input") || document.getElementById("new-group-input");
+    if (inp) setTimeout(() => inp.focus(), 10);
+  }
+}
+
+function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+function setFilter(g) { filterGroup = g; confirmingId = null; render(); }
+
+function startComplete(id) { confirmingId = confirmingId === id ? null : id; render(); }
+function cancelConfirm() { confirmingId = null; render(); }
+
+function confirmComplete(id, user) {
+  const t = tasks.find(x => x.id === id);
+  if (t) { t.done = true; t.completedAt = new Date().toISOString(); t.completedBy = user; }
+  confirmingId = null;
+  save(); render();
+}
+
+function undoComplete(id) {
+  const t = tasks.find(x => x.id === id);
+  if (t) { t.done = false; t.completedAt = null; t.completedBy = null; }
+  save(); render();
+}
+
+function removeTask(id) {
+  tasks = tasks.filter(t => t.id !== id);
+  confirmingId = null;
+  save(); render();
+}
+
+function showAdd() { showAddForm = true; showNewGroupInput = false; render(); }
+function hideAddForm() { showAddForm = false; showNewGroupInput = false; render(); }
+function toggleNewGroup(v) { showNewGroupInput = v; render(); }
+
+function addTask() {
+  const inp = document.getElementById("new-task-input");
+  if (!inp || !inp.value.trim()) return;
+
+  let group;
+  if (showNewGroupInput) {
+    const gi = document.getElementById("new-group-input");
+    group = gi && gi.value.trim() ? gi.value.trim() : groups[0];
+    if (!groups.includes(group)) groups.push(group);
+  } else {
+    const sel = document.getElementById("group-select");
+    group = sel ? sel.value : groups[0];
+  }
+  const priority = document.getElementById("priority-select").value;
+
+  tasks.push({
+    id: "t" + Date.now(),
+    group,
+    text: inp.value.trim(),
+    done: false,
+    priority,
+    completedAt: null,
+    completedBy: null,
+  });
+
+  showAddForm = false;
+  showNewGroupInput = false;
+  save(); render();
+}
+
+function clearCompleted() {
+  if (confirm("Remove all completed tasks permanently?")) {
+    tasks = tasks.filter(t => !t.done);
+    save(); render();
+  }
+}
+
+function resetAll() {
+  if (confirm("Reset everything to defaults? This removes all custom tasks and groups.")) {
+    tasks = JSON.parse(JSON.stringify(DEFAULT_TASKS));
+    groups = [...DEFAULT_GROUPS];
+    filterGroup = "All";
+    confirmingId = null;
+    showAddForm = false;
+    save(); render();
+  }
+}
+
+// Init
+load();
+render();
+</script>
+</body>
+</html>
